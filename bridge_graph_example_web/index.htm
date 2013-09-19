@@ -1,0 +1,108 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<script type="text/javascript">
+	window.onload = function () {
+        
+        // storage arrays for the 3 data series
+		var dps1 = [];
+        var dps2 = [];
+        var dps3 = [];
+        
+        // chart configuration
+		var chart = new CanvasJS.Chart("chartContainer",{
+			zoomEnabled: true,
+            title :{
+				text: "bridge graph example"
+			},
+            axisX:{
+                valueFormatString: "HH:mm:ss"
+            },
+			data: [{
+				type: "spline",
+                xValueType: "dateTime",
+				dataPoints: dps1
+			},
+            {
+                type: "spline",
+                xValueType: "dateTime",
+				dataPoints: dps2
+            },
+            {
+                type: "spline",
+                xValueType: "dateTime",
+				dataPoints: dps3
+            }]
+		});
+
+		var xVal;
+		var yVal1;
+        var yVal2;
+        var yVal3;
+        
+        // dynamically update the chart every second
+		var updateInterval = 1000;
+        // show the last 50 points in the chart
+		var dataLength = 50;
+        
+        // function to get the latest data values from the bridge rest api and add to the chart
+		var updateChart = function () {
+            
+            // the x axis is stamped as the current time
+            xVal = (new Date()).getTime();
+            
+            // you need to change the arduinoyun.local to the name of your YUN or the ip address
+            var url = "http://arduinoyun.local/data/get";
+            
+            // get the current values from the bridge rest api and process the JSON response
+            $.ajax({ 
+                async: false, 
+                url: url, 
+                dataType: "json", 
+                success: function(data) {        
+                    $.each(data, function(key, val){
+                        if (key == 'value') {
+                            yVal1 = parseInt(val.random1);
+                            yVal2 = parseInt(val.random2);
+                            yVal3 = parseInt(val.random3);
+                        }
+                    });
+                } 
+            });
+            
+            // add the values to the series arrays
+            dps1.push({x: xVal, y: yVal1});
+            dps2.push({x: xVal, y: yVal2});
+            dps3.push({x: xVal, y: yVal3});
+
+            // remove datapoints from the graph when they exceed data length
+			if (dps1.length > dataLength) {
+				dps1.shift();				
+			}
+            
+            if (dps2.length > dataLength) {
+				dps2.shift();				
+			}
+            
+            if (dps3.length > dataLength) {
+				dps3.shift();				
+			}
+			
+			chart.render();		
+
+		};
+        
+        // call the update function at the set interval
+		setInterval(function(){updateChart()}, updateInterval);
+
+	}
+	</script>
+	<script type="text/javascript" src="canvasjs.min.js"></script>
+    <script type="text/javascript" src="jquery-1.10.2.min.js"></script>
+</head>
+<body>
+	<div id="chartContainer" style="height: 300px; width:100%;">
+	</div>
+</body>
+</html>
